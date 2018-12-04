@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Form builder</title>
+    <link rel="Stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+    <link rel="Stylesheet" type="text/css" href="style.css">
+
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.11/lodash.min.js"></script>
+    <script src="helper.js"></script>
+    <script src="vfg.js"></script>
+</head>
+<body>
+
+<div  id="app">
+
+    <div class="container" style="width: 100%; max-width: 100%">
+        <div style="padding-top: 20px;">
+
+            <div class="panel panel-default">
+                <div class="panel-heading">Form</div>
+                <div class="panel-body">
+                    <vue-form-generator :schema="schema" :model="model" :options="formOptions"></vue-form-generator>
+                </div>
+            </div>
+
+
+            <div class="mb-4 clearfix">
+                <button v-on:click="form.processing = true" class="btn btn-primary">Dodaj pole</button>
+                <div class="card mt-3" style="width: 100%" v-show="form.processing">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Rodzaj pola:</label>
+                            <select v-model="form.type">
+                                <option disabled value="">Please select one</option>
+                                <option value="input">Text</option>
+                                <option value="checklist">Lista - wiecej niz jeden wybor</option>
+                                <option value="radios">Lista - tylko jeden wybor</option>
+                                <option value="select">select</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Tytuł pola:</label>
+                            <input type="text" v-model="form.label">
+                        </div>
+
+                        <button v-on:click="addField()" class="btn btn-success">Zapisz</button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <div style="background: #000; color: #fff; min-height: 100vh; padding: 20px;">
+        <br>
+        <!--<h6>Model</h6>
+        <pre v-if="model" v-html="prettyJSON(model)"></pre>-->
+
+        <h6>Schema</h6>
+        <pre v-if="model" v-html="prettyJSON(schema)"></pre>
+
+    </div>
+
+</div>
+
+<script>
+
+
+    new Vue({
+        el: "#app",
+
+        components: {
+            "vue-form-generator": VueFormGenerator.component
+        },
+
+        data() {
+            return {
+                showModal: false,
+                form: {
+                    processing: false,
+                    type: 'input',
+                    label: ''
+                },
+                model: {},
+                schema: {
+                    fields: []
+                },
+
+                formOptions: {
+                    validateAfterLoad: true,
+                    validateAfterChanged: true
+                }
+            };
+        },
+
+        methods: {
+            addField: function() {
+
+                this.schema.fields.push(this.createField(this.form));
+
+                this.form = {
+                    processing: false,
+                    type: 'input',
+                    label: ''
+                };
+
+            },
+            createField: function (form) {
+                let uuid = guid();
+                this.model[uuid] = null;
+
+                return createFieldHelper(this, uuid, form);
+            },
+            editField : function (model, field) {
+                for(let i = 0; i < this.schema.fields.length; i++) {
+                    if(this.schema.fields[i].uuid === field.uuid){
+                        this.schema.fields[i]['label'] = prompt('Nowy label', this.schema.fields[i]['label']);
+                        break;
+                    }
+                }
+            },
+            removeField : function (model, field) {
+                for(let i = 0; i < this.schema.fields.length; i++) {
+                    if(this.schema.fields[i].uuid === field.uuid){
+                        this.schema.fields.splice(i, 1);
+                        break;
+                    }
+                }
+            },
+            moveUpField : function (model, field) {
+                let copySchemaFields = _.cloneDeep(this.schema.fields);
+
+                for(let i = 0; i < copySchemaFields.length; i++) {
+                    if(copySchemaFields[i].uuid === field.uuid){
+                        let tmp = copySchemaFields[i - 1];
+                        if(tmp) {
+                            copySchemaFields[i - 1] = copySchemaFields[i];
+                            copySchemaFields[i] = tmp;
+                        }
+                        break;
+                    }
+                }
+
+                this.schema.fields = copySchemaFields;
+            },
+            moveDownField : function (model, field) {
+                let copySchemaFields = _.cloneDeep(this.schema.fields);
+
+                for(let i = 0; i < copySchemaFields.length; i++) {
+                    if(copySchemaFields[i].uuid === field.uuid){
+                        let tmp = copySchemaFields[i + 1];
+                        if(tmp) {
+                            copySchemaFields[i + 1] = copySchemaFields[i];
+                            copySchemaFields[i] = tmp;
+                        }
+                        break;
+                    }
+                }
+
+                this.schema.fields = copySchemaFields;
+            },
+            prettyJSON: prettyJSONHelper
+        },
+
+    });
+
+</script>
+
+</body>
+</html>
